@@ -1,7 +1,37 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 const isDev = process.env.NODE_ENV === 'development';
+
+// Configuração básica do autoUpdater
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
+
+autoUpdater.on('checking-for-update', () => {
+  console.log('[Auto-update] Verificando se há atualizações...');
+});
+
+autoUpdater.on('update-available', (info) => {
+  console.log('[Auto-update] Atualização disponível:', info.version);
+});
+
+autoUpdater.on('update-not-available', (info) => {
+  console.log('[Auto-update] Nenhuma atualização disponível no momento.');
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('[Auto-update] Erro na atualização:', err);
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  console.log(`[Auto-update] Progresso do download: ${progressObj.percent.toFixed(2)}%`);
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('[Auto-update] Atualização baixada com sucesso e pronta para instalar.');
+  autoUpdater.quitAndInstall();
+});
 
 const BACKUP_FILENAME = 'backup_pdv.json';
 const backupPath = path.join(app.getPath('userData'), BACKUP_FILENAME);
@@ -98,6 +128,11 @@ ipcMain.handle('import-backup', async () => {
 
 app.whenReady().then(() => {
   createWindow();
+
+  // Inicia a verificação de atualizações se não estiver em desenvolvimento
+  if (!isDev) {
+    autoUpdater.checkForUpdatesAndNotify();
+  }
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
